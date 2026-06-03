@@ -12,7 +12,7 @@ class Settings(BaseSettings):
 
     secret_key: str = "cambiar_esta_clave_en_produccion"
     algorithm: str = "HS256"
-    access_token_expire_minutes: int = 60 * 24
+    access_token_expire_minutes: int = 60 * 24 * 365
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
