@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
 from ..auth import crear_access_token, verificar_password
@@ -12,14 +12,24 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.post("/login", response_model=TokenResponse)
 def login(payload: LoginRequest, db: Session = Depends(get_db)) -> TokenResponse:
-    username = payload.nombre.strip()
-    if not username:
+    identificador = payload.nombre.strip()
+    if not identificador:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Ingresar nombre de usuario",
+            detail="Ingresar usuario o email",
         )
 
-    user = db.query(Usuario).filter(func.lower(Usuario.nombre) == func.lower(username)).first()
+    identificador_lower = identificador.lower()
+    user = (
+        db.query(Usuario)
+        .filter(
+            or_(
+                func.lower(Usuario.nombre) == identificador_lower,
+                func.lower(Usuario.email) == identificador_lower,
+            )
+        )
+        .first()
+    )
 
     if not user or not verificar_password(payload.password, user.password_hash):
         raise HTTPException(

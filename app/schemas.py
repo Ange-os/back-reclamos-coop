@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, time
 from typing import Optional
 
 from pydantic import BaseModel, ConfigDict
@@ -27,6 +27,7 @@ class ReclamoResponse(BaseModel):
     direccion: Optional[str] = None
     estado: Optional[str] = None
     fecha_creacion: date
+    hora_creacion: time
 
 
 class ReclamosListResponse(BaseModel):
