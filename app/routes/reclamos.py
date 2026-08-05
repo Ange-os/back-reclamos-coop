@@ -46,7 +46,7 @@ def listar_reclamos(
 
     total = query.count()
     rows = (
-        query.order_by(Tramite.fecha_creacion.asc(), Tramite.hora_creacion.asc())
+        query.order_by(Tramite.fecha_creacion.desc(), Tramite.hora_creacion.desc())
         .offset(offset)
         .limit(limit)
         .all()
