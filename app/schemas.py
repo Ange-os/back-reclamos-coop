@@ -39,3 +39,28 @@ class ReclamosListResponse(BaseModel):
 
 class CambiarEstadoRequest(BaseModel):
     estado: str
+
+
+class DeviceRegisterRequest(BaseModel):
+    expo_push_token: str
+    plataforma: str  # android | ios
+
+
+class DeviceResponse(BaseModel):
+    ok: bool = True
+    mensaje: str = "Dispositivo registrado"
+
+
+class ReclamoNuevoNotificationRequest(BaseModel):
+    reclamo_id: int
+    nombre: Optional[str] = None
+    apellido: Optional[str] = None
+    descripcion: Optional[str] = None
+    celular: Optional[str] = None
+
+
+class NotificationSendResponse(BaseModel):
+    ok: bool = True
+    enviados: int = 0
+    fallidos: int = 0
+    sin_dispositivos: bool = False

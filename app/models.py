@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, Date, DateTime, Integer, String, Text, Time, func
+from sqlalchemy import Boolean, Column, Date, DateTime, ForeignKey, Integer, String, Text, Time, func
 
 from .database import Base
 
@@ -11,6 +11,18 @@ class Usuario(Base):
     email = Column(String(150), nullable=False, unique=True, index=True)
     password_hash = Column(String(255), nullable=False)
     activo = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class Dispositivo(Base):
+    __tablename__ = "dispositivos"
+
+    id = Column(Integer, primary_key=True, index=True)
+    usuario_id = Column(Integer, ForeignKey("usuarios_app.id", ondelete="CASCADE"), nullable=False, index=True)
+    expo_push_token = Column(String(255), nullable=False, unique=True, index=True)
+    plataforma = Column(String(20), nullable=False)
+    activo = Column(Boolean, default=True, nullable=False, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 

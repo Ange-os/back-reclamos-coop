@@ -14,6 +14,9 @@ class Settings(BaseSettings):
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 60 * 24 * 365
 
+    # Secret para el workflow (n8n / agente WhatsApp). Header: X-Webhook-Secret
+    webhook_secret: str = "cambiar_webhook_secret"
+
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
 

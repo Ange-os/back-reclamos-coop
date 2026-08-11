@@ -2,13 +2,13 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .database import Base, engine
-from .routes import auth, reclamos
+from .routes import auth, devices, notificaciones, reclamos
 
 
 app = FastAPI(
     title="Guardia Reclamos API",
-    version="0.1.0",
-    description="API REST para login y gestion de reclamos.",
+    version="0.2.0",
+    description="API REST para login, reclamos y notificaciones push.",
 )
 
 app.add_middleware(
@@ -24,6 +24,8 @@ Base.metadata.create_all(bind=engine)
 
 app.include_router(auth.router, prefix="/api")
 app.include_router(reclamos.router, prefix="/api")
+app.include_router(devices.router, prefix="/api")
+app.include_router(notificaciones.router, prefix="/api")
 
 
 @app.get("/")
