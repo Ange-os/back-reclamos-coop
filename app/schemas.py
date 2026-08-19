@@ -25,6 +25,7 @@ class ReclamoResponse(BaseModel):
     celular: Optional[str] = None
     descripcion: Optional[str] = None
     direccion: Optional[str] = None
+    tipo: Optional[str] = None
     estado: Optional[str] = None
     fecha_creacion: date
     hora_creacion: time

@@ -19,8 +19,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Crea tablas si no existen. Luego podes migrar a Alembic.
-Base.metadata.create_all(bind=engine)
+# Crear tablas faltantes sin tumbar el servicio si alguna FK ya existe / falla.
+try:
+    Base.metadata.create_all(bind=engine)
+except Exception as exc:
+    # En producción las tablas se crean por SQL; no debe impedir el arranque.
+    print(f"[WARN] create_all omitido/falló: {exc}")
 
 app.include_router(auth.router, prefix="/api")
 app.include_router(reclamos.router, prefix="/api")

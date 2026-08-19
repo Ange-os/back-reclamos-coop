@@ -11,6 +11,7 @@ from ..schemas import CambiarEstadoRequest, ReclamoResponse, ReclamosListRespons
 router = APIRouter(prefix="/reclamos", tags=["reclamos"])
 
 RANGOS_FECHA = frozenset({"hoy", "semana", "mes"})
+TIPOS_GUARDIA = frozenset({"reclamo", "emergencia"})
 
 
 @router.get("", response_model=ReclamosListResponse)
@@ -31,7 +32,10 @@ def listar_reclamos(
             detail="rango inválido. Valores permitidos: hoy, semana, mes",
         )
 
-    query = db.query(Tramite).filter(Tramite.tipo == "reclamo", Tramite.activo.is_(True))
+    query = db.query(Tramite).filter(
+        Tramite.tipo.in_(TIPOS_GUARDIA),
+        Tramite.activo.is_(True),
+    )
 
     if estado is not None:
         query = query.filter(Tramite.estado == estado)
@@ -69,13 +73,17 @@ def cambiar_estado_reclamo(
 ) -> ReclamoResponse:
     reclamo = (
         db.query(Tramite)
-        .filter(Tramite.id == reclamo_id, Tramite.tipo == "reclamo", Tramite.activo.is_(True))
+        .filter(
+            Tramite.id == reclamo_id,
+            Tramite.tipo.in_(TIPOS_GUARDIA),
+            Tramite.activo.is_(True),
+        )
         .first()
     )
     if not reclamo:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Reclamo no encontrado",
+            detail="Reclamo o emergencia no encontrado",
         )
 
     nuevo_estado = payload.estado.strip()
