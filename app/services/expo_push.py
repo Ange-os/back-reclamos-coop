@@ -5,6 +5,9 @@ from __future__ import annotations
 from typing import Any
 
 import httpx
+from sqlalchemy.orm import Session
+
+from ..models import Dispositivo
 
 EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send"
 
@@ -65,3 +68,52 @@ def is_device_not_registered(ticket: dict[str, Any]) -> bool:
     details = ticket.get("details") or {}
     error = details.get("error") if isinstance(details, dict) else None
     return error == "DeviceNotRegistered"
+
+
+def notify_reclamo_nuevo(
+    db: Session,
+    *,
+    reclamo_id: int,
+    nombre: str | None = None,
+    apellido: str | None = None,
+    descripcion: str | None = None,
+) -> dict[str, Any]:
+    """
+    Envía push a todos los dispositivos activos.
+    Desactiva tokens con DeviceNotRegistered.
+    """
+    devices = db.query(Dispositivo).filter(Dispositivo.activo.is_(True)).all()
+    if not devices:
+        return {"enviados": 0, "fallidos": 0, "sin_dispositivos": True}
+
+    messages = [
+        build_reclamo_message(
+            d.expo_push_token,
+            reclamo_id=reclamo_id,
+            nombre=nombre,
+            apellido=apellido,
+            descripcion=descripcion,
+        )
+        for d in devices
+    ]
+
+    tickets = send_expo_push(messages)
+
+    enviados = 0
+    fallidos = 0
+    for device, ticket in zip(devices, tickets):
+        if ticket.get("status") == "ok":
+            enviados += 1
+            continue
+        fallidos += 1
+        if is_device_not_registered(ticket):
+            device.activo = False
+
+    if fallidos:
+        db.commit()
+
+    return {
+        "enviados": enviados,
+        "fallidos": fallidos,
+        "sin_dispositivos": False,
+    }

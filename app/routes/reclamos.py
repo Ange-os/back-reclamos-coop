@@ -13,6 +13,7 @@ from ..schemas import (
     ReclamoResponse,
     ReclamosListResponse,
 )
+from ..services.expo_push import notify_reclamo_nuevo
 
 router = APIRouter(prefix="/reclamos", tags=["reclamos"])
 
@@ -138,6 +139,19 @@ def crear_reclamo(
     db.add(tramite)
     db.commit()
     db.refresh(tramite)
+
+    # Push a dispositivos activos (mismo camino que el webhook de n8n).
+    # Si falla el envío, el trámite igual queda creado.
+    try:
+        notify_reclamo_nuevo(
+            db,
+            reclamo_id=tramite.id,
+            nombre=tramite.nombre,
+            apellido=tramite.apellido,
+            descripcion=tramite.descripcion,
+        )
+    except Exception as exc:
+        print(f"[WARN] Push tras crear reclamo #{tramite.id} falló: {exc}")
 
     return ReclamoResponse.model_validate(tramite)
 

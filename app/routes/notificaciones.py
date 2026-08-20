@@ -3,9 +3,8 @@ from sqlalchemy.orm import Session
 
 from ..config import get_settings
 from ..database import get_db
-from ..models import Dispositivo
 from ..schemas import NotificationSendResponse, ReclamoNuevoNotificationRequest
-from ..services.expo_push import build_reclamo_message, is_device_not_registered, send_expo_push
+from ..services.expo_push import notify_reclamo_nuevo
 
 router = APIRouter(prefix="/notificaciones", tags=["notificaciones"])
 settings = get_settings()
@@ -37,45 +36,23 @@ def notificar_reclamo_nuevo(
             detail="reclamo_id inválido",
         )
 
-    devices = db.query(Dispositivo).filter(Dispositivo.activo.is_(True)).all()
-    if not devices:
-        return NotificationSendResponse(ok=True, enviados=0, fallidos=0, sin_dispositivos=True)
-
-    messages = [
-        build_reclamo_message(
-            d.expo_push_token,
+    try:
+        result = notify_reclamo_nuevo(
+            db,
             reclamo_id=payload.reclamo_id,
             nombre=payload.nombre,
             apellido=payload.apellido,
             descripcion=payload.descripcion,
         )
-        for d in devices
-    ]
-
-    try:
-        tickets = send_expo_push(messages)
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f"Error al enviar push a Expo: {exc}",
         ) from exc
 
-    enviados = 0
-    fallidos = 0
-    for device, ticket in zip(devices, tickets):
-        if ticket.get("status") == "ok":
-            enviados += 1
-            continue
-        fallidos += 1
-        if is_device_not_registered(ticket):
-            device.activo = False
-
-    if fallidos:
-        db.commit()
-
     return NotificationSendResponse(
         ok=True,
-        enviados=enviados,
-        fallidos=fallidos,
-        sin_dispositivos=False,
+        enviados=int(result["enviados"]),
+        fallidos=int(result["fallidos"]),
+        sin_dispositivos=bool(result["sin_dispositivos"]),
     )
