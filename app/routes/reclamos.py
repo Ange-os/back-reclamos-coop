@@ -1,4 +1,5 @@
-from datetime import date, timedelta
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
@@ -6,12 +7,19 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from ..dependencies import get_current_user
 from ..models import Tramite, Usuario
-from ..schemas import CambiarEstadoRequest, ReclamoResponse, ReclamosListResponse
+from ..schemas import (
+    CambiarEstadoRequest,
+    CrearReclamoRequest,
+    ReclamoResponse,
+    ReclamosListResponse,
+)
 
 router = APIRouter(prefix="/reclamos", tags=["reclamos"])
 
 RANGOS_FECHA = frozenset({"hoy", "semana", "mes"})
 TIPOS_GUARDIA = frozenset({"reclamo", "emergencia"})
+AR_TZ = ZoneInfo("America/Argentina/Buenos_Aires")
+NOMBRE_DEFAULT = "Vecino/a S/D"
 
 
 @router.get("", response_model=ReclamosListResponse)
@@ -40,7 +48,7 @@ def listar_reclamos(
     if estado is not None:
         query = query.filter(Tramite.estado == estado)
 
-    hoy = date.today()
+    hoy = datetime.now(AR_TZ).date()
     if rango == "hoy":
         query = query.filter(Tramite.fecha_creacion == hoy)
     elif rango == "semana":
@@ -62,6 +70,70 @@ def listar_reclamos(
         limit=limit,
         offset=offset,
     )
+
+
+@router.post("", response_model=ReclamoResponse, status_code=status.HTTP_201_CREATED)
+def crear_reclamo(
+    payload: CrearReclamoRequest,
+    db: Session = Depends(get_db),
+    _: Usuario = Depends(get_current_user),
+) -> ReclamoResponse:
+    tipo = payload.tipo.strip().lower()
+    if tipo not in TIPOS_GUARDIA:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="tipo inválido. Valores permitidos: reclamo, emergencia",
+        )
+
+    descripcion = payload.descripcion.strip()
+    if not descripcion:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="La descripción / problema es obligatoria",
+        )
+
+    celular = payload.celular.strip() if payload.celular else None
+    email = payload.email.strip().lower() if payload.email else None
+    if celular == "":
+        celular = None
+    if email == "":
+        email = None
+
+    if not celular and not email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Debés indicar al menos celular o email",
+        )
+
+    direccion = payload.direccion.strip() if payload.direccion else None
+    if direccion == "":
+        direccion = None
+
+    ahora = datetime.now(AR_TZ)
+    tramite = Tramite(
+        nombre=NOMBRE_DEFAULT,
+        apellido=None,
+        celular=celular,
+        email=email,
+        direccion=direccion,
+        suministro=None,
+        tipo=tipo,
+        descripcion=descripcion,
+        origen="interno",
+        id_conversacion=None,
+        prioridad="urgente",
+        estado="pendiente",
+        responsable_asignado_id=None,
+        fecha_creacion=ahora.date(),
+        hora_creacion=ahora.time().replace(microsecond=0),
+        es_anonimo=False,
+        activo=True,
+    )
+    db.add(tramite)
+    db.commit()
+    db.refresh(tramite)
+
+    return ReclamoResponse.model_validate(tramite)
 
 
 @router.patch("/{reclamo_id}/estado", response_model=ReclamoResponse)

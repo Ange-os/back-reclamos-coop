@@ -32,14 +32,21 @@ class Dispositivo(Base):
 class Tramite(Base):
     __tablename__ = "tramites"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column("ID", Integer, primary_key=True, index=True, autoincrement=True)
     nombre = Column(String(100), nullable=True)
     apellido = Column(String(100), nullable=True)
     celular = Column(String(20), nullable=True)
-    descripcion = Column(Text, nullable=True)
+    email = Column(String(100), nullable=True)
     direccion = Column(String(200), nullable=True)
+    suministro = Column(String(50), nullable=True)
     tipo = Column(String(20), nullable=False, index=True)
+    descripcion = Column(Text, nullable=True)
+    origen = Column(String(20), nullable=False)
+    id_conversacion = Column(String(255), nullable=True)
+    prioridad = Column(String(20), nullable=True, default="normal")
     estado = Column(String(50), nullable=True, index=True)
+    responsable_asignado_id = Column(Integer, nullable=True)
     fecha_creacion = Column(Date, nullable=False, index=True)
     hora_creacion = Column(Time, nullable=False)
+    es_anonimo = Column(Boolean, default=False, nullable=True)
     activo = Column(Boolean, default=True, nullable=False, index=True)

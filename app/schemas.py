@@ -23,10 +23,13 @@ class ReclamoResponse(BaseModel):
     nombre: Optional[str] = None
     apellido: Optional[str] = None
     celular: Optional[str] = None
+    email: Optional[str] = None
     descripcion: Optional[str] = None
     direccion: Optional[str] = None
     tipo: Optional[str] = None
     estado: Optional[str] = None
+    prioridad: Optional[str] = None
+    origen: Optional[str] = None
     fecha_creacion: date
     hora_creacion: time
 
@@ -36,6 +39,14 @@ class ReclamosListResponse(BaseModel):
     total: int
     limit: int
     offset: int
+
+
+class CrearReclamoRequest(BaseModel):
+    tipo: str  # reclamo | emergencia
+    descripcion: str
+    direccion: Optional[str] = None
+    celular: Optional[str] = None
+    email: Optional[str] = None
 
 
 class CambiarEstadoRequest(BaseModel):
