@@ -19,7 +19,6 @@ router = APIRouter(prefix="/reclamos", tags=["reclamos"])
 RANGOS_FECHA = frozenset({"hoy", "semana", "mes"})
 TIPOS_GUARDIA = frozenset({"reclamo", "emergencia"})
 AR_TZ = ZoneInfo("America/Argentina/Buenos_Aires")
-NOMBRE_DEFAULT = "Vecino/a S/D"
 
 
 @router.get("", response_model=ReclamosListResponse)
@@ -92,6 +91,13 @@ def crear_reclamo(
             detail="La descripción / problema es obligatoria",
         )
 
+    nombre = payload.nombre.strip()
+    if not nombre:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El nombre es obligatorio",
+        )
+
     celular = payload.celular.strip() if payload.celular else None
     email = payload.email.strip().lower() if payload.email else None
     if celular == "":
@@ -111,7 +117,7 @@ def crear_reclamo(
 
     ahora = datetime.now(AR_TZ)
     tramite = Tramite(
-        nombre=NOMBRE_DEFAULT,
+        nombre=nombre,
         apellido=None,
         celular=celular,
         email=email,

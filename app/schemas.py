@@ -43,6 +43,7 @@ class ReclamosListResponse(BaseModel):
 
 class CrearReclamoRequest(BaseModel):
     tipo: str  # reclamo | emergencia
+    nombre: str
     descripcion: str
     direccion: Optional[str] = None
     celular: Optional[str] = None
